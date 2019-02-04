@@ -12,7 +12,7 @@ from connexion.apis.abstract import AbstractAPI
 from connexion.exceptions import OAuthProblem, OAuthScopeProblem
 from connexion.handlers import AuthErrorHandler
 from connexion.lifecycle import ConnexionRequest, ConnexionResponse
-from connexion.utils import Jsonifier, is_json_mimetype, yamldumper
+from connexion.utils import Jsonifier, yamldumper
 
 try:
     import ujson as json
