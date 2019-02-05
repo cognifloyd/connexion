@@ -13,6 +13,7 @@ from connexion.exceptions import OAuthProblem, OAuthScopeProblem
 from connexion.handlers import AuthErrorHandler
 from connexion.lifecycle import ConnexionRequest, ConnexionResponse
 from connexion.utils import Jsonifier, is_json_mimetype, yamldumper
+from connexion.security.aiohttp_security_handlers_factory import AioHttpSecurityHandlerFactory
 
 try:
     import ujson as json
@@ -65,6 +66,10 @@ class AioHttpApi(AbstractAPI):
         )
         middlewares = self.options.as_dict().get('middlewares', [])
         self.subapp.middlewares.extend(middlewares)
+
+    def default_security_handler_factory(self):
+        """ Create default SecurityHandlerFactory to create all security check handlers """
+        return AioHttpSecurityHandlerFactory()
 
     def _set_base_path(self, base_path):
         AbstractAPI._set_base_path(self, base_path)
@@ -194,7 +199,6 @@ class AioHttpApi(AbstractAPI):
         logger.debug('... Adding %s -> %s', method, operation_id,
                      extra=vars(operation))
 
-        # TODO: Framework dependent factory
         handler = operation.function
         endpoint_name = '{}_{}_{}'.format(
             self._api_name,
