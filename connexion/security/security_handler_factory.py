@@ -8,7 +8,8 @@ import textwrap
 from six.moves import http_cookies
 
 from ..decorators.parameter import inspect_function_arguments
-from ..exceptions import ConnexionException, OAuthProblem, OAuthResponseProblem, OAuthScopeProblem
+from ..exceptions import (ConnexionException, OAuthProblem,
+                          OAuthResponseProblem, OAuthScopeProblem)
 from ..utils import get_function_from_name
 
 logger = logging.getLogger('connexion.api.security')
@@ -16,6 +17,7 @@ logger = logging.getLogger('connexion.api.security')
 
 class SecurityHandlerFactory:
     no_value = object()
+    required_scopes_kw = 'required_scopes'
 
     def __init__(self, pass_context_arg_name):
         self.pass_context_arg_name = pass_context_arg_name
@@ -235,18 +237,20 @@ class SecurityHandlerFactory:
     def _need_to_add_context_or_scopes(self, func):
         arguments, has_kwargs = inspect_function_arguments(func)
         need_context = self.pass_context_arg_name and (has_kwargs or self.pass_context_arg_name in arguments)
-        need_required_scopes = has_kwargs or 'required_scopes' in arguments
+        need_required_scopes = has_kwargs or self.required_scopes_kw in arguments
         return need_context, need_required_scopes
 
     def _generic_check(self, func, exception_msg):
         need_to_add_context, need_to_add_required_scopes = self._need_to_add_context_or_scopes(func)
 
-        def wrapper(request, *args, required_scopes=None):
+        def wrapper(request, *args, **kw):
             kwargs = {}
             if need_to_add_context:
                 kwargs[self.pass_context_arg_name] = request.context
             if need_to_add_required_scopes:
-                kwargs['required_scopes'] = required_scopes
+                # required_scopes is passed in kw because python 2.7 does not support syntax:
+                # def wrapper(request, *args, required_scopes=None)
+                kwargs[self.required_scopes_kw] = kw.get(self.required_scopes_kw)
             token_info = func(*args, **kwargs)
             if token_info is self.no_value:
                 return self.no_value
