@@ -9,12 +9,13 @@ import six
 from ..decorators.produces import NoContent
 from ..exceptions import ResolverError
 from ..http_facts import METHODS
+from ..jsonifier import Jsonifier
 from ..lifecycle import ConnexionResponse
 from ..operations import make_operation
 from ..options import ConnexionOptions
 from ..resolver import Resolver
 from ..spec import Specification
-from ..utils import Jsonifier, is_json_mimetype
+from ..utils import is_json_mimetype
 
 MODULE_PATH = pathlib.Path(__file__).absolute().parent.parent
 SWAGGER_UI_URL = 'ui'
@@ -410,5 +411,4 @@ class AbstractAPI(object):
 
     @classmethod
     def _set_jsonifier(cls):
-        import json
-        cls.jsonifier = Jsonifier(json)
+        cls.jsonifier = Jsonifier()
