@@ -97,3 +97,8 @@ def get_date():
 @asyncio.coroutine
 def get_uuid():
     return ConnexionResponse(body={'value': uuid.UUID(hex='e7ff66d0-3ec2-4c4e-bed0-6e4723c24c51')})
+
+
+@asyncio.coroutine
+def aiohttp_token_info(token_info):
+    return aiohttp.web.json_response(data=token_info)

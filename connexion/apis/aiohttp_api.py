@@ -13,6 +13,8 @@ from connexion.exceptions import OAuthProblem, OAuthScopeProblem
 from connexion.handlers import AuthErrorHandler
 from connexion.jsonifier import JSONEncoder, Jsonifier
 from connexion.lifecycle import ConnexionRequest, ConnexionResponse
+from connexion.security.aiohttp_security_handlers_factory import \
+    AioHttpSecurityHandlerFactory
 from connexion.utils import yamldumper
 
 logger = logging.getLogger('connexion.apis.aiohttp_api')
@@ -58,6 +60,11 @@ class AioHttpApi(AbstractAPI):
         )
         middlewares = self.options.as_dict().get('middlewares', [])
         self.subapp.middlewares.extend(middlewares)
+
+    @staticmethod
+    def make_security_handler_factory(pass_context_arg_name):
+        """ Create default SecurityHandlerFactory to create all security check handlers """
+        return AioHttpSecurityHandlerFactory(pass_context_arg_name)
 
     def _set_base_path(self, base_path):
         AbstractAPI._set_base_path(self, base_path)
