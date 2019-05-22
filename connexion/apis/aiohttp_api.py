@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import re
+import traceback
+from contextlib import suppress
 from urllib.parse import parse_qs
 
 import aiohttp_jinja2
@@ -9,28 +11,72 @@ from aiohttp import web
 from aiohttp.web_exceptions import HTTPNotFound, HTTPPermanentRedirect
 from aiohttp.web_middlewares import normalize_path_middleware
 from connexion.apis.abstract import AbstractAPI
-from connexion.exceptions import OAuthProblem, OAuthScopeProblem
+from connexion.exceptions import ProblemException
 from connexion.handlers import AuthErrorHandler
 from connexion.jsonifier import JSONEncoder, Jsonifier
 from connexion.lifecycle import ConnexionRequest, ConnexionResponse
+from connexion.problem import problem
 from connexion.security.aiohttp_security_handlers_factory import \
     AioHttpSecurityHandlerFactory
 from connexion.utils import yamldumper
+from werkzeug.exceptions import HTTPException as werkzeug_HTTPException
+
+try:
+    from http import HTTPStatus
+except ImportError:  # pragma: no cover
+    # httpstatus35 backport for python 3.4
+    from httpstatus import HTTPStatus
 
 logger = logging.getLogger('connexion.apis.aiohttp_api')
 
 
+def _generic_problem(http_status: HTTPStatus, exc: Exception = None):
+    extra = None
+    if exc is not None:
+        loop = asyncio.get_event_loop()
+        if loop.get_debug():
+            tb = None
+            with suppress(Exception):
+                tb = traceback.format_exc()
+            if tb:
+                extra = {"traceback": tb}
+
+    return problem(
+        status=http_status.value,
+        title="{0.value} {0.phrase}".format(http_status),
+        detail=http_status.description,
+        ext=extra,
+    )
+
+
 @web.middleware
 @asyncio.coroutine
-def oauth_problem_middleware(request, handler):
+def problems_middleware(request, handler):
     try:
         response = yield from handler(request)
-    except (OAuthProblem, OAuthScopeProblem) as oauth_error:
-        return web.Response(
-            status=oauth_error.code,
-            body=AioHttpApi.jsonifier.dumps(oauth_error.description).encode(),
-            content_type='application/problem+json'
-        )
+    except ProblemException as exc:
+        response = exc.to_problem()
+    except web.HTTPError as exc:
+        response = problem(status=exc.status, title=exc.reason, detail=exc.text)
+    except werkzeug_HTTPException as exc:
+        response = problem(status=exc.code, title=exc.name, detail=exc.description)
+    except (
+        web.HTTPException,  # eg raised HTTPRedirection or HTTPSuccessful
+        asyncio.CancelledError,  # skipped in default web_protocol
+    ):
+        # leave this to default handling in aiohttp.web_protocol.RequestHandler.start()
+        raise
+    except asyncio.TimeoutError as exc:
+        # overrides 504 from aiohttp.web_protocol.RequestHandler.start()
+        logger.debug('Request handler timed out.', exc_info=exc)
+        response = _generic_problem(HTTPStatus.GATEWAY_TIMEOUT, exc)
+    except Exception as exc:
+        # overrides 500 from aiohttp.web_protocol.RequestHandler.start()
+        logger.exception('Error handling request', exc_info=exc)
+        response = _generic_problem(HTTPStatus.INTERNAL_SERVER_ERROR, exc)
+
+    if isinstance(response, ConnexionResponse):
+        response = yield from AioHttpApi.get_response(response)
     return response
 
 
@@ -46,7 +92,7 @@ class AioHttpApi(AbstractAPI):
         )
         self.subapp = web.Application(
             middlewares=[
-                oauth_problem_middleware,
+                problems_middleware,
                 trailing_slash_redirect
             ]
         )
