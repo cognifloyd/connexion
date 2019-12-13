@@ -4,7 +4,7 @@ import pytest
 import requests
 from unittest.mock import MagicMock
 
-from connexion.exceptions import OAuthResponseProblem, OAuthScopeProblem
+from connexion.exceptions import OAuthProblem, OAuthScopeProblem
 
 
 def test_get_tokeninfo_url(monkeypatch, security_handler_factory):
@@ -84,7 +84,7 @@ def test_verify_oauth_invalid_local_token_response_none(security_handler_factory
     request = MagicMock()
     request.headers = {"Authorization": "Bearer 123"}
 
-    with pytest.raises(OAuthResponseProblem):
+    with pytest.raises(OAuthProblem):
         wrapped_func(request, ['admin'])
 
 

@@ -8,7 +8,7 @@ import textwrap
 import http.cookies
 
 from ..decorators.parameter import inspect_function_arguments
-from ..exceptions import ConnexionException, UnauthorizedProblem, OAuthScopeProblem
+from ..exceptions import ConnexionException, OAuthProblem, OAuthScopeProblem, UnauthorizedProblem
 from ..utils import get_function_from_name
 
 logger = logging.getLogger('connexion.api.security')
@@ -177,11 +177,19 @@ class AbstractSecurityHandlerFactory(abc.ABC):
         check_oauth_func = self.check_oauth_func(token_info_func, scope_validate_func)
 
         def wrapper(request, required_scopes):
-            auth_type, token = self.get_auth_header_value(request)
-            if auth_type != 'bearer':
-                return self.no_value
+            try:
+                auth_type, token = self.get_auth_header_value(request)
+                if auth_type != 'bearer':
+                    return self.no_value
 
-            return check_oauth_func(request, token, required_scopes=required_scopes)
+                return check_oauth_func(request, token, required_scopes=required_scopes)
+            except UnauthorizedProblem as exc:
+                # expects both UnauthorizedProblem and OAuthProblem to be werkzeug.exceptions.Unauthorized
+                raise OAuthProblem(
+                    description=exc.description,
+                    response=exc.response,
+                    www_authenticate=exc.www_authenticate
+                )
 
         return wrapper
 
