@@ -1,6 +1,6 @@
 import requests
 
-# from ..exceptions import OAuthResponseProblem
+from ..exceptions import OAuthResponseProblem
 from .security_handler_factory import AbstractSecurityHandlerFactory
 
 # use connection pool for OAuth tokeninfo
@@ -32,8 +32,10 @@ class FlaskSecurityHandlerFactory(AbstractSecurityHandlerFactory):
             :rtype: dict
             """
             headers = {'Authorization': 'Bearer {}'.format(token)}
-            token_request = session.get(token_info_url, headers=headers, timeout=5)
-            if not token_request.ok:
-                return None
-            return token_request.json()
+            token_response = session.get(
+                token_info_url, headers=headers, timeout=self.remote_token_timeout
+            )
+            if not token_response.ok:
+                raise OAuthResponseProblem(token_response)
+            return token_response.json()
         return wrapper

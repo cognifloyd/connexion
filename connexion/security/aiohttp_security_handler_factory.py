@@ -3,7 +3,7 @@ import logging
 
 import aiohttp
 
-# from ..exceptions import OAuthResponseProblem
+from ..exceptions import OAuthResponseProblem
 from .async_security_handler_factory import AbstractAsyncSecurityHandlerFactory
 
 logger = logging.getLogger('connexion.api.security')
@@ -32,8 +32,10 @@ class AioHttpSecurityHandlerFactory(AbstractAsyncSecurityHandlerFactory):
                 # Must be created in a coroutine
                 self.client_session = aiohttp.ClientSession()
             headers = {'Authorization': 'Bearer {}'.format(token)}
-            token_request = await self.client_session.get(token_info_url, headers=headers, timeout=5)
-            if token_request.status != 200:
-                return None
-            return token_request.json()
+            token_response = await self.client_session.get(
+                token_info_url, headers=headers, timeout=self.remote_token_timeout
+            )
+            if token_response.status != 200:
+                raise OAuthResponseProblem(token_response)
+            return token_response.json()
         return wrapper
