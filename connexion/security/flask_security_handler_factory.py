@@ -36,6 +36,9 @@ class FlaskSecurityHandlerFactory(AbstractSecurityHandlerFactory):
                 token_info_url, headers=headers, timeout=self.remote_token_timeout
             )
             if not token_response.ok:
-                raise OAuthResponseProblem(token_response)
+                raise OAuthResponseProblem(
+                    description="Provided token is not valid",
+                    token_response=token_response
+                )
             return token_response.json()
         return wrapper
