@@ -130,6 +130,10 @@ class ConnexionOptions(object):
         """
         return self._options.get('uri_parser_class', None)
 
+    @property
+    def auth_remote_token_timeout(self):
+        return self._options.get('auth_remote_token_timeout', None)
+
 
 def filter_values(dictionary):
     # type: (dict) -> dict

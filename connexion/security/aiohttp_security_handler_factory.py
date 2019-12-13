@@ -3,6 +3,7 @@ import logging
 
 import aiohttp
 
+# from ..exceptions import OAuthResponseProblem
 from .async_security_handler_factory import AbstractAsyncSecurityHandlerFactory
 
 logger = logging.getLogger('connexion.api.security')
@@ -19,6 +20,8 @@ class AioHttpSecurityHandlerFactory(AbstractAsyncSecurityHandlerFactory):
 
         Returned function must accept oauth token in parameter.
         It must return a token_info dict in case of success, None otherwise.
+
+        This is the only method where it makes sense to raise OAuthResponseProblem
 
         :param token_info_url: Url to get information about the token
         :type token_info_url: str

@@ -1,5 +1,6 @@
 import requests
 
+# from ..exceptions import OAuthResponseProblem
 from .security_handler_factory import AbstractSecurityHandlerFactory
 
 # use connection pool for OAuth tokeninfo
@@ -16,6 +17,8 @@ class FlaskSecurityHandlerFactory(AbstractSecurityHandlerFactory):
 
         Returned function must accept oauth token in parameter.
         It must return a token_info dict in case of success, None otherwise.
+
+        This is the only method where it makes sense to raise OAuthResponseProblem
 
         :param token_info_url: Url to get information about the token
         :type token_info_url: str

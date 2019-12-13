@@ -107,6 +107,10 @@ class NonConformingResponseHeaders(NonConformingResponse):
         super(NonConformingResponseHeaders, self).__init__(reason=reason, message=message)
 
 
+class UnauthorizedProblem(Unauthorized):
+    pass
+
+
 class OAuthProblem(Unauthorized):
     pass
 

@@ -8,11 +8,12 @@ import textwrap
 import http.cookies
 
 from ..decorators.parameter import inspect_function_arguments
-from ..exceptions import (ConnexionException, OAuthProblem,
-                          OAuthResponseProblem, OAuthScopeProblem)
+from ..exceptions import ConnexionException, UnauthorizedProblem, OAuthScopeProblem
 from ..utils import get_function_from_name
 
 logger = logging.getLogger('connexion.api.security')
+
+DEFAULT_REMOTE_TOKEN_TIMEOUT = 5
 
 
 class AbstractSecurityHandlerFactory(abc.ABC):
@@ -31,8 +32,11 @@ class AbstractSecurityHandlerFactory(abc.ABC):
     no_value = object()
     required_scopes_kw = 'required_scopes'
 
-    def __init__(self, pass_context_arg_name):
+    def __init__(self, pass_context_arg_name, remote_token_timeout=None):
         self.pass_context_arg_name = pass_context_arg_name
+        if remote_token_timeout is None:
+            remote_token_timeout = DEFAULT_REMOTE_TOKEN_TIMEOUT
+        self.remote_token_timeout = remote_token_timeout
 
     @staticmethod
     def _get_function(security_definition, security_definition_key, environ_key, default=None):
@@ -157,7 +161,7 @@ class AbstractSecurityHandlerFactory(abc.ABC):
 
         Return Authorization type and value if any.
         If not Authorization, return (None, None)
-        Raise OAuthProblem for invalid Authorization header
+        Raise UnauthorizedProblem for invalid Authorization header
         """
         authorization = request.headers.get('Authorization')
         if not authorization:
@@ -166,7 +170,7 @@ class AbstractSecurityHandlerFactory(abc.ABC):
         try:
             auth_type, value = authorization.split(None, 1)
         except ValueError:
-            raise OAuthProblem(description='Invalid authorization header')
+            raise UnauthorizedProblem(description='Invalid authorization header')
         return auth_type.lower(), value
 
     def verify_oauth(self, token_info_func, scope_validate_func):
@@ -192,7 +196,7 @@ class AbstractSecurityHandlerFactory(abc.ABC):
             try:
                 username, password = base64.b64decode(user_pass).decode('latin1').split(':', 1)
             except Exception:
-                raise OAuthProblem(description='Invalid authorization header')
+                raise UnauthorizedProblem(description='Invalid authorization header')
 
             return check_basic_info_func(request, username, password, required_scopes=required_scopes)
 
@@ -297,7 +301,7 @@ class AbstractSecurityHandlerFactory(abc.ABC):
             if token_info is self.no_value:
                 return self.no_value
             if token_info is None:
-                raise OAuthResponseProblem(description=exception_msg, token_response=None)
+                raise UnauthorizedProblem(description=exception_msg)
             return token_info
 
         return wrapper
@@ -347,7 +351,7 @@ class AbstractSecurityHandlerFactory(abc.ABC):
 
             if token_info is cls.no_value:
                 logger.info("... No auth provided. Aborting with 401.")
-                raise OAuthProblem(description='No authorization token provided')
+                raise UnauthorizedProblem(description='No authorization token provided')
 
             # Fallback to 'uid' for backward compatibility
             request.context['user'] = token_info.get('sub', token_info.get('uid'))
@@ -363,6 +367,8 @@ class AbstractSecurityHandlerFactory(abc.ABC):
 
         Returned function must accept oauth token in parameter.
         It must return a token_info dict in case of success, None otherwise.
+
+        This is the only method where it makes sense to raise OAuthResponseProblem
 
         :param token_info_url: Url to get information about the token
         :type token_info_url: str

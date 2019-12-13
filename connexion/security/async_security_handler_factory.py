@@ -5,7 +5,7 @@ import logging
 
 import aiohttp
 
-from ..exceptions import OAuthProblem, OAuthResponseProblem, OAuthScopeProblem
+from ..exceptions import OAuthScopeProblem, UnauthorizedProblem
 from .security_handler_factory import AbstractSecurityHandlerFactory
 
 logger = logging.getLogger('connexion.api.security')
@@ -27,7 +27,7 @@ class AbstractAsyncSecurityHandlerFactory(AbstractSecurityHandlerFactory):
             if token_info is self.no_value:
                 return self.no_value
             if token_info is None:
-                raise OAuthResponseProblem(description=exception_msg, token_response=None)
+                raise UnauthorizedProblem(description=exception_msg)
             return token_info
 
         return wrapper
@@ -72,7 +72,7 @@ class AbstractAsyncSecurityHandlerFactory(AbstractSecurityHandlerFactory):
 
             if token_info is cls.no_value:
                 logger.info("... No auth provided. Aborting with 401.")
-                raise OAuthProblem(description='No authorization token provided')
+                raise UnauthorizedProblem(description='No authorization token provided')
 
             # Fallback to 'uid' for backward compatibility
             request.context['user'] = token_info.get('sub', token_info.get('uid'))
