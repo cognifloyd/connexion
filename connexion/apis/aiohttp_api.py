@@ -107,9 +107,12 @@ class AioHttpApi(AbstractAPI):
         self.subapp.middlewares.extend(middlewares)
 
     @staticmethod
-    def make_security_handler_factory(pass_context_arg_name):
+    def make_security_handler_factory(pass_context_arg_name, remote_token_timeout=None):
         """ Create default SecurityHandlerFactory to create all security check handlers """
-        return AioHttpSecurityHandlerFactory(pass_context_arg_name)
+        return AioHttpSecurityHandlerFactory(
+            pass_context_arg_name=pass_context_arg_name,
+            remote_token_timeout=remote_token_timeout,
+        )
 
     def _set_base_path(self, base_path):
         AbstractAPI._set_base_path(self, base_path)

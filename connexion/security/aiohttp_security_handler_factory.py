@@ -10,8 +10,11 @@ logger = logging.getLogger('connexion.api.security')
 
 
 class AioHttpSecurityHandlerFactory(AbstractAsyncSecurityHandlerFactory):
-    def __init__(self, pass_context_arg_name):
-        super(AioHttpSecurityHandlerFactory, self).__init__(pass_context_arg_name=pass_context_arg_name)
+    def __init__(self, pass_context_arg_name, remote_token_timeout=None):
+        super(AioHttpSecurityHandlerFactory, self).__init__(
+            pass_context_arg_name=pass_context_arg_name,
+            remote_token_timeout=remote_token_timeout,
+        )
         self.client_session = None
 
     def get_token_info_remote(self, token_info_url):

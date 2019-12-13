@@ -102,7 +102,10 @@ class AbstractAPI(metaclass=AbstractAPIMeta):
         logger.debug('pass_context_arg_name: %s', pass_context_arg_name)
         self.pass_context_arg_name = pass_context_arg_name
 
-        self.security_handler_factory = self.make_security_handler_factory(pass_context_arg_name)
+        self.security_handler_factory = self.make_security_handler_factory(
+            pass_context_arg_name=pass_context_arg_name,
+            remote_token_timeout=self.options.auth_remote_token_timeout,
+        )
 
         if self.options.openapi_spec_available:
             self.add_openapi_json()
@@ -148,7 +151,7 @@ class AbstractAPI(metaclass=AbstractAPIMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def make_security_handler_factory(pass_context_arg_name):
+    def make_security_handler_factory(pass_context_arg_name, remote_token_timeout=None):
         """ Create SecurityHandlerFactory to create all security check handlers """
 
     def add_operation(self, path, method):

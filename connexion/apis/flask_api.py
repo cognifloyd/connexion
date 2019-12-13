@@ -18,9 +18,12 @@ logger = logging.getLogger('connexion.apis.flask_api')
 class FlaskApi(AbstractAPI):
 
     @staticmethod
-    def make_security_handler_factory(pass_context_arg_name):
+    def make_security_handler_factory(pass_context_arg_name, remote_token_timeout=None):
         """ Create default SecurityHandlerFactory to create all security check handlers """
-        return FlaskSecurityHandlerFactory(pass_context_arg_name)
+        return FlaskSecurityHandlerFactory(
+            pass_context_arg_name=pass_context_arg_name,
+            remote_token_timeout=remote_token_timeout,
+        )
 
     def _set_base_path(self, base_path):
         super(FlaskApi, self)._set_base_path(base_path)
