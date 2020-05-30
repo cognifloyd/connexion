@@ -1,4 +1,5 @@
 # Decorators to change the return type of endpoints
+import asyncio
 import functools
 import logging
 
@@ -94,8 +95,18 @@ class ResponseValidator(BaseDecorator):
             return response
 
         if has_coroutine(function):
-            from .coroutine_wrappers import get_response_validator_wrapper
-            wrapper = get_response_validator_wrapper(function, _wrapper)
+
+            @functools.wraps(function)
+            async def wrapper(request):
+                """
+                response_validator_wrapper:
+                does proper validation of parameters and responses.
+                """
+                response = function(request)
+                while asyncio.iscoroutine(response):
+                    response = await response
+
+                return _wrapper(request, response)
 
         else:  # pragma: 3 no cover
             @functools.wraps(function)
